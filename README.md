@@ -1,6 +1,6 @@
 # Home Energy Flow Card
 
-[![Version](https://img.shields.io/badge/version-4.6.1-blue.svg)](https://github.com/Toolifybe/ha-home-energy-flow-card)
+[![Version](https://img.shields.io/badge/version-4.6.2-blue.svg)](https://github.com/Toolifybe/ha-home-energy-flow-card)
 [![Marketplace](https://img.shields.io/badge/Marketplace-Custom-orange.svg)](https://hacs.xyz)
 
 Animated energy flow card for Home Assistant (formerly *Power Flow Card*). Visualises real-time energy flows between solar panels, grid, battery, home and individual consumers.
@@ -315,6 +315,9 @@ Browse icons at [pictogrammers.com](https://pictogrammers.com/library/mdi/). Con
 ---
 
 ## Changelog
+
+### v4.6.2
+- Long consumer names now wrap onto two lines inside the tile instead of running past the card edge (e.g. "Verwarming woonkamer"). Width is measured in the HA font; whatever still does not fit gets "…". The full name stays in the tooltip.
 
 ### v4.6.1
 - Fix: home consumption showed 0 W when the sensors did not update at the same moment (e.g. a solar sensor lagging a few minutes while the battery already charges the real surplus, so the energy balance came out negative). The home now uses at least the sum of the measured consumers, shown as "≥ 124 W", and the flows are calculated with that value. With `home_entity` nothing changes.

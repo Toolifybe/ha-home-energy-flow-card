@@ -1,5 +1,5 @@
 /**
- * Home Energy Flow Card v4.6.1   (vroeger: Power Flow Card)
+ * Home Energy Flow Card v4.6.2   (vroeger: Power Flow Card)
  *
  * Layout:
  *   Kop: icoon, titel, ondertitel met wat er gebeurt, pil met de nettoestand
@@ -44,7 +44,7 @@
  *     icon: mdi:desktop-classic
  */
 
-const PFC_VERSION = '4.6.1';
+const PFC_VERSION = '4.6.2';
 const PFC_WARN = '#f97316';       // net-afname nadert de piekgrens
 const PFC_OVER = '#dc2626';       // net-afname boven de piekgrens
 const PFC_BAT_LOW = 20, PFC_BAT_MID = 50;   // battery_style: battery → rood / oranje / groen
@@ -103,6 +103,29 @@ function pfcEl(tag, attrs, text) {
   if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
   if (text !== undefined) e.textContent = text;
   return e;
+}
+
+// Breedte van een tekst (font-size = viewBox-eenheden), gemeten met canvas in het lettertype van HA.
+let pfcCtx = null;
+function pfcTextWidth(t, size) {
+  try {
+    pfcCtx = pfcCtx || document.createElement('canvas').getContext('2d');
+    const fam = getComputedStyle(document.body).fontFamily || 'Roboto, sans-serif';
+    pfcCtx.font = `500 ${size}px ${fam}`;
+    return pfcCtx.measureText(t).width;
+  } catch (e) { return t.length * size * 0.56; }
+}
+
+// Knipt een naam in hoogstens 2 regels die binnen `max` passen; wat dan nog te lang is krijgt …
+function pfcWrap(name, max, size) {
+  const past = t => pfcTextWidth(t, size) <= max;
+  const kort = t => { if (past(t)) return t; while (t.length > 1 && !past(t + '…')) t = t.slice(0, -1); return t.trimEnd() + '…'; };
+  if (past(name)) return [name];
+  const w = name.split(/\s+/);
+  let r1 = w[0], i = 1;
+  while (i < w.length && past(r1 + ' ' + w[i])) r1 += ' ' + w[i++];
+  if (i === w.length) return [kort(r1)];         // één woord dat te lang is
+  return [kort(r1), kort(w.slice(i).join(' '))];
 }
 
 class HomeEnergyFlowCard extends HTMLElement {
@@ -621,11 +644,13 @@ class HomeEnergyFlowCard extends HTMLElement {
       const ci = icon(e.icon, P.PX + 19, 0, 15, e.color);
       ci.style.display = 'none';
       this._E.CI[i] = ci;
-      const name = e.name.length > 18 ? e.name.slice(0, 17) + '…' : e.name;
-      const nt = pfcEl('text', { x: P.PX + 38, y: -3, class: 'lbl', 'font-size': '10.5' }, name);
+      // Naam: past hij niet op één regel in de tegel, dan op twee regels (rest met …).
+      const regels = pfcWrap(e.name, P.PW - 38 - 7, 10.5);
+      const nt = pfcEl('text', { x: P.PX + 38, y: regels.length > 1 ? -8.5 : -3, class: 'lbl', 'font-size': '10.5' });
+      regels.forEach((r, j) => nt.appendChild(pfcEl('tspan', { x: P.PX + 38, dy: j ? 10.5 : 0 }, r)));
       nt.appendChild(pfcEl('title', {}, e.name));
       g.appendChild(nt);
-      this._E.V['ex' + i] = value(g, P.PX + 38, 12, 13, 'start');
+      this._E.V['ex' + i] = regels.length > 1 ? value(g, P.PX + 38, 15.5, 12, 'start') : value(g, P.PX + 38, 12, 13, 'start');
       this._E.CG[i] = g;
       klik(g, e.entity);
       nodesG.appendChild(g);
